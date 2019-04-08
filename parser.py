@@ -25,7 +25,7 @@ def parseLecture(response,response2):
         if _lectureId.string not in Ids:
             Ids.append(_lectureId.string)
 
-    lectures = {idx:{"id":Id,"title":title} for idx,Id,title in zip([i for i in range(len(Ids))],Ids,titles)}
+    lectures = {str(idx):{"id":Id,"title":title} for idx,Id,title in zip([i for i in range(len(Ids))],Ids,titles)}
 
     soup = bs(response2,'lxml')
     _lectureAnchors = soup.find_all('a',attrs={"target":"_top"})
@@ -54,7 +54,7 @@ def addContentId(response,lecture):
 
     return lecture
 
-def addMaterialList(response,lecture):
+def parseHrefandTitles(response):
     try:
         soup = bs(response,'html.parser')
         _materialDiv = soup.find("div",{"id":"containerdiv"})
@@ -67,18 +67,20 @@ def addMaterialList(response,lecture):
                 continue
             _anchors.append(_anchor)
 
-        contents={}
+        hrefs=[]
+        titles=[]
         for idx,_anchor in enumerate(_anchors):
-            href=_anchor["href"]
-            title = _anchor.find("span")
+            href=_anchor["href"]    
+            title=_anchor.find("span")
             if not title:
                 title = _anchor.find("img")
-            title = title.string
+            if(len(title.string.split('.'))==1):
+                title=title.string
+            else:
+                title=''.join(title.string.split('.')[:-1])
+            hrefs.append(href)
+            titles.append(title)
 
-            contents.update({idx:{"href":href,"title":title}})
-
-        lecture.update({"contents":contents})
-        return lecture
+        return hrefs,titles
     except:
-        lecture.update({"contents":contents})
-        return lecture
+        return hrefs,titles

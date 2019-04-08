@@ -1,0 +1,46 @@
+#!/usr/bin/python3
+
+import kulms
+import communicate
+import requests
+import sys
+import getopt
+import getpass
+
+def usage():
+    print("usage : kulms-cli [option]")
+    print()
+    print("-i,--interactive: interactive mode")
+    print("-u,--user [uid] : login as uid")
+    print("-p,--pass       : require password(required if 'u' option is set)")
+    print("-r --refresh    : refresh whole user cache just after login")
+    print("--help          : show this usage")
+
+def main():
+    interactive = False
+    refresh = False
+    uid = ''
+    upw = ''
+    opts, args = getopt.getopt(sys.argv[1:],"ipru:",["interactive","pass","refresh","user=","help"])
+
+    for opt,arg in opts:
+        if opt in ("-i","--interactive"):
+            interactive=True
+        elif opt in ("-u","--user"):
+            uid = arg
+        elif opt in ("-p","--pass"):
+            upw = getpass.getpass()
+        elif opt in ("-r","--refresh"):
+            refresh=True
+        elif opt in ("--help"):
+            usage()
+        else:
+            usage()
+            break
+        
+    if interactive == 1:
+        communicate.commLoop(uid,upw,refresh)
+
+    
+if __name__ == '__main__':
+    main()

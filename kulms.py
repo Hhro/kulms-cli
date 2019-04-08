@@ -1,8 +1,12 @@
 import requests
 import parser
 import getpass
+import json
+import sys
+import os
 
 home = "https://kulms.korea.ac.kr"
+cacheDir='/tmp/kulms_cache'
 
 def login(uid,upw):
     global home
@@ -40,19 +44,51 @@ def getLectures(sid):
         url = home+("/webapps/blackboard/execute/announcement?"
             "method=search&context=course_entry&course_id={}"
             "&handle=announcements_entry&mode=view"
-        ).format(lectures[i]["courseId"])
+        ).format(lectures[str(i)]["courseId"])
         response3 = requests.get(url,cookies=cookies)
         if "강의자료" in response3.text:
-            lectures[i].update(parser.addContentId(response3.text,lectures[i]))
+            lectures[str(i)].update(parser.addContentId(response3.text,lectures[str(i)]))
     
     for i in range(len(lectures)):
-        lecture = lectures[i]
+        lecture = lectures[str(i)]
         if "contentId" not in lecture.keys():
             continue
         url = home+("/webapps/blackboard/content/listContent.jsp?"
             "course_id={}&content_id={}&mode=reset"
         ).format(lecture["courseId"],lecture["contentId"])
         response4 = requests.get(url,cookies=cookies)
-        lectures[i].update(parser.addMaterialList(response4.text,lecture))
-    
-    return lectures
+
+        hrefs,titles=parser.parseHrefandTitles(response4.text)
+        contents={}
+        for idx,href,title in zip([_ for _ in range(len(hrefs))],hrefs,titles):
+            url = home+href
+            try:
+                response5 = requests.head(url,cookies=cookies,allow_redirects=False)
+            except:
+                continue
+            location = response5.headers["location"]
+            content = {str(idx):{"title":title,"location":location}}
+            contents.update(content)
+        
+        lectures[str(i)].update({"contents":contents})
+
+    return lectures 
+
+def isCacheExist(uid):
+    global cacheDir
+    return os.path.isfile(cacheDir+'/'+uid+'.cache')
+
+def saveCache(uid,lectures):
+    global cacheDir
+    cacheDir='/tmp/kulms_cache'
+    if not os.path.isdir(cacheDir):
+        os.mkdir(cacheDir)
+    path = os.path.join(cacheDir,uid+'.cache')
+    with open(path,'w') as cacheOut:
+        json.dump(lectures,cacheOut)
+
+def loadCache(uid):
+    global cacheDir
+    path = os.path.join(cacheDir,uid+'.cache')
+    with open(path,'r') as cacheIn:
+        return json.load(cacheIn)
