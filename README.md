@@ -1,7 +1,5 @@
 # kulms-cli
 
-:warning: 사용 중 발생하는 모든 문제에 대해 책임지지 않습니다.
-
 ## Usage
 
 ```bash
